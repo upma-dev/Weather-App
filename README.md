@@ -163,18 +163,3 @@ In `Dashboard.js`, call `getWeather({ lat, lon })` using `navigator.geolocation.
 | GET | /api/weather?city=Delhi | ✅ JWT | Current weather |
 | GET | /api/weather/forecast?city=Delhi | ✅ JWT | 24hr forecast |
 
----
-
-## 💡 Interview Tips
-
-**Q: Why hash OTPs?**
-A: Even if the DB is compromised, attackers can't use leaked OTPs. We use bcrypt same as passwords.
-
-**Q: Why separate OTP collection?**
-A: Allows TTL index for auto-cleanup, audit trail, multiple purposes (verify/reset).
-
-**Q: How is 2FA implemented?**
-A: After correct password, a new OTP is generated and emailed. The user can only get a JWT after verifying this OTP. This is TOTP via email.
-
-**Q: How do you prevent OTP brute force?**
-A: Add rate limiting (express-rate-limit package) + mark OTPs as used after one attempt.
