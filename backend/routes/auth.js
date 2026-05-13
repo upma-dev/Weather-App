@@ -16,14 +16,18 @@ const signToken = (id) =>
 // Creates account, sends 6-digit OTP to email
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
 
     if (!name || !email || !password)
       return res.status(400).json({ success: false, message: "All fields required." });
 
     const exists = await User.findOne({ email });
     if (exists)
-      return res.status(400).json({ success: false, message: "Email already registered." });
+      return res.status(400).json({
+        success: false,
+        message: "You're already registered. Try signing in.",
+      });
 
     // Create user (unverified)
     const user = await User.create({ name, email, password });
@@ -118,15 +122,19 @@ router.post("/resend-otp", async (req, res) => {
 // Step 1: verify credentials → Step 2: send 2FA OTP
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const { password } = req.body;
 
     const user = await User.findOne({ email });
     if (!user)
-      return res.status(401).json({ success: false, message: "Invalid credentials." });
+      return res.status(404).json({
+        success: false,
+        message: "No account found with this email. Please sign up.",
+      });
 
     const match = await user.comparePassword(password);
     if (!match)
-      return res.status(401).json({ success: false, message: "Invalid credentials." });
+      return res.status(401).json({ success: false, message: "Incorrect password." });
 
     if (!user.isVerified)
       return res.status(403).json({

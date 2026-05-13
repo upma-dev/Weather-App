@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const axios = require("axios");
-const { protect } = require("../middleware/auth");
 
 const BASE_URL = "https://api.openweathermap.org/data/2.5";
 
@@ -28,6 +27,8 @@ router.get("/", async (req, res) => {
       weather: {
         city: data.name,
         country: data.sys.country,
+        lat: data.coord?.lat,
+        lon: data.coord?.lon,
         temp: Math.round(data.main.temp),
         feelsLike: Math.round(data.main.feels_like),
         tempMin: Math.round(data.main.temp_min),
@@ -37,6 +38,7 @@ router.get("/", async (req, res) => {
         windSpeed: data.wind.speed,
         windDeg: data.wind.deg,
         visibility: data.visibility,
+        clouds: data.clouds?.all ?? 0,
         description: data.weather[0].description,
         icon: data.weather[0].icon,
         main: data.weather[0].main,
@@ -63,9 +65,9 @@ router.get("/forecast", async (req, res) => {
 
     let url;
     if (lat && lon) {
-      url = `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${process.env.WEATHER_API_KEY}&units=metric&cnt=8`;
+      url = `${BASE_URL}/forecast?lat=${lat}&lon=${lon}&appid=${process.env.WEATHER_API_KEY}&units=metric&cnt=40`;
     } else if (city) {
-      url = `${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${process.env.WEATHER_API_KEY}&units=metric&cnt=8`;
+      url = `${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${process.env.WEATHER_API_KEY}&units=metric&cnt=40`;
     } else {
       return res
         .status(400)
@@ -82,12 +84,16 @@ router.get("/forecast", async (req, res) => {
       main: item.weather[0].main,
       humidity: item.main.humidity,
       windSpeed: item.wind.speed,
+      pop: item.pop != null ? Math.round(item.pop * 100) : null,
     }));
 
     res.json({
       success: true,
       city: data.city.name,
       country: data.city.country,
+      timezone: data.city.timezone,
+      lat: data.city.coord?.lat,
+      lon: data.city.coord?.lon,
       forecast,
     });
   } catch (err) {

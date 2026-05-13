@@ -16,14 +16,17 @@ export default function Login() {
     setLoading(true);
     try {
       const { data } = await loginUser(form);
+      const emailNorm = String(form.email || "").trim().toLowerCase();
       if (data.success && data.require2FA) {
-        navigate("/verify-otp", { state: { email: form.email, purpose: "login" } });
+        navigate("/verify-otp", { state: { email: emailNorm, purpose: "login" } });
       }
     } catch (err) {
       const msg = err.response?.data?.message || "Login failed.";
       const reqVerify = err.response?.data?.requireVerification;
       if (reqVerify) {
-        navigate("/verify-otp", { state: { email: form.email, purpose: "verify" } });
+        navigate("/verify-otp", {
+          state: { email: String(form.email || "").trim().toLowerCase(), purpose: "verify" },
+        });
       } else {
         setError(msg);
       }

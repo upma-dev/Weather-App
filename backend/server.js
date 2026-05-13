@@ -29,10 +29,29 @@ app.use((err, req, res, next) => {
 // ─── MongoDB + Start ──────────────────────────────────────────────────────────
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connected");
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`🚀 Server running on http://localhost:${process.env.PORT || 5000}`);
+    // Drop indexes that exist in DB but not on the current schema (e.g. old `username` unique).
+    try {
+      const User = require("./models/User");
+      const dropped = await User.syncIndexes();
+      if (dropped?.length) console.log("🧹 Removed stale indexes:", dropped.join(", "));
+    } catch (err) {
+      console.warn("⚠️ Index sync skipped:", err.message);
+    }
+    const port = Number(process.env.PORT) || 5000;
+    const server = app.listen(port, () => {
+      console.log(`🚀 Server running on http://localhost:${port}`);
+    });
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(
+          `❌ Port ${port} is already in use. Stop the other Node process (or change PORT in .env), then start the backend again.`
+        );
+      } else {
+        console.error("❌ Server failed to start:", err.message);
+      }
+      process.exit(1);
     });
   })
   .catch((err) => {

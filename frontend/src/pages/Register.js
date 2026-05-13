@@ -17,7 +17,7 @@ export default function Register() {
     try {
       const { data } = await registerUser(form);
       if (data.success) {
-        navigate("/verify-otp", { state: { email: form.email, purpose: "verify" } });
+        navigate("/verify-otp", { state: { email: data.email, purpose: "verify" } });
       }
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed.");
