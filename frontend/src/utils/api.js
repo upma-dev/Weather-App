@@ -1,6 +1,9 @@
 import axios from "axios";
 
-const API = axios.create({ baseURL: "/api" });
+// Dev: CRA proxy → "/api". Production: set REACT_APP_API_URL on Vercel (e.g. https://your-api.onrender.com/api)
+const baseURL = process.env.REACT_APP_API_URL || "/api";
+
+const API = axios.create({ baseURL });
 
 // Auth
 export const registerUser = (data) => API.post("/auth/register", data);
