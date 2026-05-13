@@ -6,10 +6,52 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
 const weatherRoutes = require("./routes/weather");
 
+/** "https://foo.com/login" → "https://foo.com" (CORS origin must not include a path) */
+function toOrigin(entry) {
+  const s = String(entry || "").trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s.includes("://") ? s : `https://${s}`);
+    return u.origin;
+  } catch {
+    return null;
+  }
+}
+
+/** CLIENT_URL can be comma- or space-separated: production + preview Vercel URLs */
+function allowedOriginsList() {
+  const raw = process.env.CLIENT_URL || "";
+  return raw
+    .split(/[\s,]+/)
+    .map(toOrigin)
+    .filter(Boolean);
+}
+
+const allowVercelPreview =
+  process.env.ALLOW_VERCEL_PREVIEWS === "1" ||
+  process.env.ALLOW_VERCEL_PREVIEWS === "true";
+
 const app = express();
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+// ─── CORS ────────────────────────────────────────────────────────────────────
+const allowed = allowedOriginsList();
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowed.includes(origin)) return callback(null, true);
+      if (
+        allowVercelPreview &&
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      console.warn("CORS rejected origin:", origin, "| allowed:", allowed);
+      callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
@@ -40,6 +82,11 @@ mongoose
       console.warn("⚠️ Index sync skipped:", err.message);
     }
     const port = Number(process.env.PORT) || 5000;
+    console.log(
+      "🌐 CORS:",
+      allowed.length ? allowed.join(" | ") : "(set CLIENT_URL)",
+      allowVercelPreview ? "+ *.vercel.app previews" : ""
+    );
     const server = app.listen(port, () => {
       console.log(`🚀 Server running on http://localhost:${port}`);
     });
