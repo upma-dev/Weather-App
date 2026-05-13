@@ -1,14 +1,14 @@
 const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp-relay.brevo.com", // ← Gmail ki jagah Brevo
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
-    // Gmail app passwords are 16 chars; pasted copies often include spaces — strip them.
     pass: String(process.env.EMAIL_PASS || "").replace(/\s/g, ""),
   },
 });
-
 /**
  * Send a 6-digit OTP email
  * @param {string} to  - recipient email
